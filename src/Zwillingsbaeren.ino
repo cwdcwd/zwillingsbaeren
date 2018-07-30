@@ -10,8 +10,8 @@
   int closeDoor(String doorId);
 
   int controlPins[]={ D0, D1 };
-  int doorStates[2];
-  int doorLastStates[2];
+  int doorStates[]={ 0, 0 };
+  int doorLastStates[]={ 0, 0 };
 
   int statusLED = D7;
 
@@ -48,40 +48,29 @@
  int openDoor(String doorId){
      //CWD-- execute open
      Spark.publish("operation", "open:"+doorId);
-     int cp=0;
-
-     // check door state first to see if it's open. bail if so
-
-     if(doorId=="1") {
-       cp=controlPins[0];
-     } else if(doorId=="2") {
-       cp=controlPins[1];
-     } else {
-       return -1;
-     }
-
-     return executeDoor(cp);
+     return operate(doorId, 1);
  }
 
  int closeDoor(String doorId){
    //CWD-- execute close
    Spark.publish("operation", "close:"+doorId);
-   int cp=0;
+   return operate(doorId, 0);
+ }
 
-   // check door state first to see if it's closed. bail if so
-String state = ""; //CWD-- TODO: record state
-   if(state == "") {
-     if(doorId == "1") {
-       cp=controlPins[0];
-     } else if(doorId=="2") {
-       cp=controlPins[1];
-     } else {
-       Spark.publish("operation", "failed to open:"+doorId);
-       return -1;
-     }
+ int operate(String doorId, int state) {
+   int dId=doorId.toInt()-1; //CWD-- Door Ids should be cardinal. -1 should arrise when it can't convert right
 
-     return executeDoor(cp);
-  }
+   if((dId==-1)||(dId>arraySize(controlPins))) { //CWD-- kick out on bad indices
+     return -1;
+   }
+
+   if(doorLastStates[dId]==state) { //CWD-- kick out if we're already at that state
+     return -2;
+   }
+
+   doorLastStates[dId]=state;
+   executeDoor(controlPins[dId]);
+   return doorLastStates[dId];
  }
 
  int executeDoor(int controlPin) {
